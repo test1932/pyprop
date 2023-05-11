@@ -1,6 +1,5 @@
-import sys
 import pyprop.testing as pytest
 import basicTests
 
-testerObj = pytest.testing('basicTests')
+testerObj = pytest.tester(basicTests)
 testerObj.runTests()
