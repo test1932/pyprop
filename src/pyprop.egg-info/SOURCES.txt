@@ -1,9 +1,0 @@
-README.md
-pyproject.toml
-src/pyprop/__init__.py
-src/pyprop/basicGenerators.py
-src/pyprop/testing.py
-src/pyprop.egg-info/PKG-INFO
-src/pyprop.egg-info/SOURCES.txt
-src/pyprop.egg-info/dependency_links.txt
-src/pyprop.egg-info/top_level.txt

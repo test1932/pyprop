@@ -131,20 +131,3 @@ class tester:
             if i == 5:
                 break
             print(f'\t->\t{val}')
-
-
-
-import basicGenerators as bg
-
-def prop_a():
-    def new(i):
-        return False
-    return ([bg.intArb(-100,100)], new)
-
-def prop_b():
-    def new(i):
-        return True
-    return ([bg.intArb(-100,100)], new)
-
-a = tester(__name__, f = "new.txt")
-a.runTests()
