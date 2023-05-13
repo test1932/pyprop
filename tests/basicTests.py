@@ -1,4 +1,4 @@
-import pyprop.basicGenerators as bg
+import pyproptest.basicGenerators as bg
 
 # a test
 def prop_new1():

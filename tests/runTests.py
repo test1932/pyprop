@@ -1,5 +1,5 @@
-import pyprop.basicGenerators as bg
-import pyprop.testing as pytest
+import pyproptest.basicGenerators as bg
+import pyproptest.testing as pytest
 
 class sortingTests:
     @staticmethod
