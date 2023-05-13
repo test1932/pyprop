@@ -26,22 +26,3 @@ If these _properties_ hold, it can be concluded that the sorting algorithm is pe
 
 ## Usage:
 The following is an implementation of some tests for ensuring that a sorting function _mysort_ works correctly. The methodology follows that described in the previous section:
-
-_mytests_ module:
-
-    import pyprop.basicGenerators as bg
-
-    def prop_amazingPropertyTest():
-        def func(i, j):
-            # assess properties here
-            return True # if successful
-        return ([bg.intArb(-100, 100), bg.intArb(-100, 100)], func)
-
-_runtests_ module:
-
-    import pyprop.testing as pytest
-    import mytests
-
-    # 1000 iterations per function, dumps results to 'myfile.txt'
-    testerObj = pytest.testing('mytests', iters = 1000, f = 'myfile.txt')
-    testerObj.runTests()

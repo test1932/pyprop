@@ -16,23 +16,57 @@ In this case, to ensure that the function _mysort_ is behaving correctly, we may
 If these _properties_ hold, it can be concluded that the sorting algorithm is performing correctly.
 
 ## Usage:
-The following is an implementation of some tests for ensuring that a sorting function _mysort_ works correctly. The methodology follows that described in the previous section:
+The general structure of a test within a class is as follows:
 
-_mytests_ module:
+    @staticmethod
+    def prop_equalLength():
+        def test(i):
+            return len(i) == len(sorted(i))
+        return ([bg.intListArb(10)], test)
+
+- _prop_equalLength_ is the function for producing the test with generators
+- _test_ is the test to be run
+- _[bg.intListArb(10)]_ is the list of generators used to produce the test function's inputs (i)
+
+The following is an implementation of some tests for ensuring that the sorting function _sorted_ works correctly. The methodology follows that described in the previous section:
 
     import pyprop.basicGenerators as bg
-
-    def prop_amazingPropertyTest():
-        def func(i, j):
-            # assess properties here
-            return True # if successful
-        return ([bg.intArb(-100, 100), bg.intArb(-100, 100)], func)
-
-_runtests_ module:
-
     import pyprop.testing as pytest
-    import mytests
 
-    # 1000 iterations per function, dumps results to 'myfile.txt'
-    testerObj = pytest.testing('mytests', iters = 1000, f = 'myfile.txt')
+    class sortingTests:
+        @staticmethod
+        def prop_equalLength():
+            def test(i):
+                return len(i) == len(sorted(i))
+            return ([bg.intListArb(10,-100,100)], test)
+
+        @staticmethod
+        def prop_sortedResult():
+            def test(i):
+                res = sorted(i)
+                return all([res[i] <= res[i + 1] for i in range(len(res) - 1)])
+            return ([bg.intListArb(10,-100,100)], test)
+        
+        @staticmethod
+        def prop_containsSameElements():
+            def test(i):
+                res = sorted(i)
+                ifreq = {x:i.count(x) for x in i}
+                return ifreq == {x:res.count(x) for x in res}
+            return ([bg.intListArb(10,-100,100)], test)
+
+
+    testerObj = pytest.tester(classes = [sortingTests])
     testerObj.runTests()
+
+This produces output:
+
+    testing sortingTests:
+	testing prop_containsSameElements:		ran 100 test(s), with 0 failure(s)
+	testing prop_equalLength:		ran 100 test(s), with 0 failure(s)
+	testing prop_sortedResult:		ran 100 test(s), with 0 failure(s)
+    ==================================================
+    0 test(s) failed (100.0%):
+    ==================================================
+
+Signifying that all of the tests passed, and the _sorted()_ function has all of the properties which we want it to have.

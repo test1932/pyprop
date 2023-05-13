@@ -1,4 +1,4 @@
-from inspect import getmembers, isfunction, getfullargspec
+import inspect
 import sys
 import re
 
@@ -6,14 +6,18 @@ class tester:
     """
     class for creating testing objects to test modules.
     """
-    def __init__(self, module, n = "prop_", iters = 100, f = None) -> None:
+    def __init__(self, modules:list[str] = [], classes = [], n:str = "prop_", 
+                 iters:int = 100, dumpfile:str = None) -> None:
         """
         constructor method.
         """
-        self.setModule(module)
+        if modules:
+            self.loadFromModules(modules)
+        elif classes:
+            self.loadFromClasses(classes)
         self.setPattern(n)
         self.setIterations(iters)
-        self.dumpFile = f
+        self.dumpFile = dumpfile
 
     @property
     def __funcs(self) -> None:
@@ -21,10 +25,38 @@ class tester:
         property representing list of test functions and generators used
         to generate arbitrary values for their parameters.
         """
-        funcs = [(f, f.__name__) for _, f in getmembers(self.__module) 
-                    if isfunction(f)]
-        ts = filter(lambda x: self.__namePattern.match(x[1]), funcs)
-        return tester.__validateFuncs(list(map(lambda x:(x[0](),x[1]), ts)))
+        if self.__modules:
+            return self.funcsFromModules()
+        elif self.__classes:
+            return self.funcsFromClasses()
+        else:
+            return []
+        
+    def funcsFromClasses(self) -> list:
+        """
+        identifies functions in specified classes.
+        """
+        testCases = dict()
+        for testClass in self.__classes:
+            method_list = filter (lambda x: self.__namePattern.match(x[0]), 
+                                  inspect.getmembers(testClass))
+            ts = filter(lambda x: self.__namePattern.match(x[0]), method_list)
+            testCases[testClass.__name__] = tester.__validateFuncs(list(map(
+                lambda x:(x[1](),x[0]), ts)))
+        return testCases
+        
+    def funcsFromModules(self) -> list:
+        """
+        identifies functions in specified modules.
+        """
+        testCases = dict()
+        for module in self.__modules:
+            funcs = [(f, f.__name__) for _, f in inspect.getmembers(module)
+                     if inspect.isfunction(f)]
+            ts = filter(lambda x: self.__namePattern.match(x[1]), funcs)
+            testCases[module.__name__] = tester.__validateFuncs(list(map(
+                lambda x:(x[0](),x[1]), ts)))
+        return testCases
     
     def setPattern(self, nameStruct: str) -> None:
         """
@@ -38,14 +70,24 @@ class tester:
             raise TypeError("invalid naming pattern")
         self.__namePattern = re.compile(f'^{nameStruct}', re.I)
 
-    def setModule(self, module: str) -> None:
+    def loadFromModules(self, modules: list[str]) -> None:
         """
-        sets the name of the module to identify test functions in.
+        sets the modules to identify test functions in.
         """
+        self.__modules = []
         try:
-            self.__module = sys.modules[module]
+            for module in modules:
+                self.__modules.append(sys.modules[module])
         except KeyError:
             raise RuntimeError("module not found")
+        self.__classes = []
+        
+    def loadFromClasses(self, classes: list):
+        """
+        sets the classes to identify test functions in.
+        """
+        self.__classes = classes
+        self.__modules = []
         
     def setIterations(self, iters: int) -> None:
         """
@@ -61,37 +103,51 @@ class tester:
         """
         Runs the tests in the specified module with the specified naming.
         """
-        fails = []
+        allFails = dict()
         fileObj = open(self.dumpFile, "w") if self.dumpFile else None
-        for (gens, func), fname in self.__funcs:
-            print(f'testing {fname}:\t\t', end = "")
-            generators = list(map(lambda x: x(), gens))
-            if not tester.__run(generators, func, self.__iters):
-                fails.append(fname)
-        self.__produceReport(fileObj, fails)
+        funcsToTest = self.__funcs
+        for group in funcsToTest:
+            fails = []
+            print(f'testing {group}:')
+            for (gens, func), fname in funcsToTest[group]:
+                print(f'\ttesting {fname}:\t\t', end = "")
+                generators = list(map(lambda x: x(), gens))
+                if not tester.__run(generators, func, self.__iters):
+                    fails.append(fname)
+            allFails[group] = fails
+        self.__produceReport(fileObj, allFails, funcsToTest)
 
-    def __produceReport(self, dumpfile, fails):
+    def __produceReport(self, dumpfile, fails, funcsToTest):
         """
         produces final report of the results of testing
         """
-        print('=' * 50)
-        print(f'{len(fails)} test(s) failed:')
-        for tname in fails:
-            print(f'\t * {tname}')
-        print('=' * 50)
-        self.dumpToFile(fails, dumpfile)
+        totTests = len([i for j in funcsToTest.values() for i in j])
+        noFails = len([i for j in fails for i in fails[j]])
+        sRate = round(100 * (totTests - noFails) / totTests, 2)
 
-    def dumpToFile(self, fails, dumpfile):
+        print('=' * 50)
+        print(f'{noFails} test(s) failed ({sRate}%):')
+        for cname in fails:
+            if len(fails[cname]):
+                print(f'Failed tests in module - {cname}:')
+            for tname in fails[cname]:
+                print(f'\t* {tname}')
+        print('=' * 50)
+        
+        if dumpfile:
+            self.dumpToFile(fails, dumpfile, funcsToTest, noFails, sRate)
+
+    def dumpToFile(self, fails, dumpfile, funcsToTest, noFails, sRate):
         """
         writes testing report to file if a descriptor exists.
         """
-        if dumpfile:
-            dumpfile.write('=' * 50 + "\n")
-            dumpfile.write(f'{len(fails)} test(s) failed:\n')
-            for tname in fails:
-                dumpfile.write(f'\t * {tname}\n')
-            dumpfile.write('=' * 50 + "\n")
-            dumpfile.close()
+        dumpfile.write(f'{noFails} test(s) failed ({sRate}%):\n')
+        for cname in fails:
+            if len(fails[cname]):
+                dumpfile.write(f'Failed tests in module - {cname}:\n')
+            for tname in fails[cname]:
+                dumpfile.write(f'\t* {tname}\n')
+        dumpfile.close()
 
     @staticmethod
     def __validateFuncs(fs: list) -> list:
@@ -99,7 +155,8 @@ class tester:
         validates whether the number of generators provided is correct for
         each function.
         """
-        if any([len(x[0][0]) != len(getfullargspec(x[0][1])[0]) for x in fs]):
+        if any([len(x[0][0]) != len(inspect.getfullargspec(x[0][1])[0]) 
+                for x in fs]):
             raise RuntimeError("invalid number of generators provided")
         return fs
     
@@ -125,9 +182,10 @@ class tester:
         """
         prints out the values which caused errors (if any).
         """
+        indent = '\t' * 2
         if len(fails):
-            print("These include:")
+            print(f'{indent}These include (args displayed as a list):')
         for i, val in enumerate(fails):
             if i == 5:
                 break
-            print(f'\t->\t{val}')
+            print(f'{indent}->\t{val}')

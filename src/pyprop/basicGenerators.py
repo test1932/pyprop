@@ -49,3 +49,11 @@ def intInc(start = 0, increment = 1):
             yield i
             i += increment
     return gen
+
+def intListArb(maxlen = 100, minBound = -sys.maxsize, maxBound = sys.maxsize):
+    def gen():
+        while True:
+            l = [random.randint(minBound, maxBound) for i in range(
+                random.randint(0, maxlen))]
+            yield l
+    return gen
