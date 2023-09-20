@@ -41,8 +41,8 @@ or, using the decorator pattern:
 
 The following is an implementation of some tests for ensuring that the sorting function _sorted_ works correctly. The methodology follows that described in the previous section:
 
-    import pyproptest.basicGenerators as bg
-    import pyproptest.testing as pytest
+    import pyproptesttest.basicGenerators as bg
+    import pyproptesttest.testing as pytest
 
     class sortingTests:
         @staticmethod
