@@ -30,8 +30,8 @@ The general structure of a test within a class is as follows:
 
 The following is an implementation of some tests for ensuring that the sorting function _sorted_ works correctly. The methodology follows that described in the previous section:
 
-    import pyprop.basicGenerators as bg
-    import pyprop.testing as pytest
+    import pyproptest.basicGenerators as bg
+    import pyproptest.testing as pytest
 
     class sortingTests:
         @staticmethod
