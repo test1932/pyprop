@@ -1,13 +1,13 @@
 Metadata-Version: 2.1
 Name: pyproptest
-Version: 0.0.1
+Version: 0.0.2
 Summary: pyproptest package
 Author-email: Max Whisson <whissonm9@gmail.com>
 Requires-Python: >=3.7
 Description-Content-Type: text/markdown
 License-File: LICENSE
 
-# Pyprop - property based testing made simple (maybe)
+# Pyproptest - property based testing made simple (maybe)
 ## Overview:
 This package was created to allow Python users to utilise property based testing in a similar manner to Haskell's _QuickCheck_ package.
 
@@ -31,38 +31,46 @@ The general structure of a test within a class is as follows:
     def prop_equalLength():
         def test(i):
             return len(i) == len(sorted(i))
-        return ([bg.intListArb(10)], test)
+        return ([bg.intListArb(10,-100,100)], test)
 
 - _prop_equalLength_ is the function for producing the test with generators
 - _test_ is the test to be run
-- _[bg.intListArb(10)]_ is the list of generators used to produce the test function's inputs (i)
+- _[bg.intListArb(10,-100,100)]_ is the list of generators used to produce the test function's inputs (i)
+
+or, using the decorator pattern:
+
+    @staticmethod
+    @bg.test([bg.intListArb(10,-100,100)])
+    def prop_equalLength(i):
+         return len(i) == len(sorted(i))
+
+- _prop_equalLength_ is the test function
+- _bg.test_ decorator specifies generators (_bg_ refers to _pyproptest.basicGenerators_)
+- _[bg.intListArb(10,-100,100)]_ is the list of generators used to produce the test function's inputs (i)
 
 The following is an implementation of some tests for ensuring that the sorting function _sorted_ works correctly. The methodology follows that described in the previous section:
 
-    import pyprop.basicGenerators as bg
-    import pyprop.testing as pytest
+    import pyproptest.basicGenerators as bg
+    import pyproptest.testing as pytest
 
     class sortingTests:
         @staticmethod
-        def prop_equalLength():
-            def test(i):
-                return len(i) == len(sorted(i))
-            return ([bg.intListArb(10,-100,100)], test)
+        @bg.test([bg.intListArb(10,-100,100)])
+        def prop_equalLength(i):
+            return len(i) == len(sorted(i))
 
         @staticmethod
-        def prop_sortedResult():
-            def test(i):
-                res = sorted(i)
-                return all([res[i] <= res[i + 1] for i in range(len(res) - 1)])
-            return ([bg.intListArb(10,-100,100)], test)
+        @bg.test([bg.intListArb(10,-100,100)])
+        def prop_sortedResult(i):
+            res = sorted(i)
+            return all([res[i] <= res[i + 1] for i in range(len(res) - 1)])
         
         @staticmethod
-        def prop_containsSameElements():
-            def test(i):
-                res = sorted(i)
-                ifreq = {x:i.count(x) for x in i}
-                return ifreq == {x:res.count(x) for x in res}
-            return ([bg.intListArb(10,-100,100)], test)
+        @bg.test([bg.intListArb(10,-100,100)])
+        def prop_containsSameElements(i):
+            res = sorted(i)
+            ifreq = {x:i.count(x) for x in i}
+            return ifreq == {x:res.count(x) for x in res}
 
 
     testerObj = pytest.tester(classes = [sortingTests])
@@ -79,3 +87,12 @@ This produces output:
     ==================================================
 
 Signifying that all of the tests passed, and the _sorted()_ function has all of the properties which we want it to have.
+
+## Defining new generators:
+Generators for producing the arbitrary input to property testing functions take the form of a wrapper function which returns a generator. For generating arbitrary integers, the following generator - available in basicGenerators, can be used:
+
+    def intArb(minBound = -sys.maxsize, maxBound = sys.maxsize):
+        def gen():
+            while True:
+                yield random.randint(minBound, maxBound)
+        return gen

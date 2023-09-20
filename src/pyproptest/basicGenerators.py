@@ -2,6 +2,13 @@ import random
 import sys
 import string as st
 
+def test(generators):
+    def func(f):
+        def inner():
+            return (generators, f)
+        return inner
+    return func
+
 def intArb(minBound = -sys.maxsize, maxBound = sys.maxsize):
     """
     function for creating a random number generator.
